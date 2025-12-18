@@ -1,9 +1,14 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleHub.Api.Domain.DTOs;
+using VehicleHub.Api.Domain.Service;
 using VehicleHub.Api.Infrastructure.Db;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
+builder.Services.AddScoped<IAdminServices, AdminServies>();
 
 builder.Services.AddDbContext<DbContexto>(options =>
 {
@@ -17,10 +22,10 @@ var app = builder.Build();
 app.MapGet("/", () => "Hello World!");
 
 
-app.MapPost("/login", (LoginDTO
-    loginDTO) =>
+app.MapPost("/login", ([FromBody] LoginDTO
+    loginDTO, IAdminServices adminServices) =>
 {
-    if (loginDTO.Email == "adm@teste.com" && loginDTO.Senha == "123456")
+    if (adminServices.Login(loginDTO) != null)
 
         return Results.Ok("Login successful");
     else
