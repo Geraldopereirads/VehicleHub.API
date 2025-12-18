@@ -1,3 +1,14 @@
+# Rider / JetBrains
+.idea/
+
+# Logs
+*.log
+
+# User-specific files
+*.user
+*.suo
+
+
 .vs/
 bin/
 obj/
