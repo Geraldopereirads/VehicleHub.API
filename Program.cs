@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleHub.Api.Domain.DTOs;
+using VehicleHub.Api.Domain.ModelViews;
 using VehicleHub.Api.Domain.Service;
 using VehicleHub.Api.Infrastructure.Db;
 
@@ -9,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddScoped<IAdminInterface, AdminServies>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 
 builder.Services.AddDbContext<DbContexto>(options =>
 {
@@ -19,7 +24,8 @@ builder.Services.AddDbContext<DbContexto>(options =>
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+
+app.MapGet("/", () => Results.Json(new Home()));
 
 
 app.MapPost("/login", ([FromBody] LoginDTO
@@ -31,6 +37,9 @@ app.MapPost("/login", ([FromBody] LoginDTO
     else
         return Results.Unauthorized();
 });
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 app.Run();
