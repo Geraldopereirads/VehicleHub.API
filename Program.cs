@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 
-builder.Services.AddScoped<IAdminServices, AdminServies>();
+builder.Services.AddScoped<IAdminInterface, AdminServies>();
 
 builder.Services.AddDbContext<DbContexto>(options =>
 {
@@ -23,7 +23,7 @@ app.MapGet("/", () => "Hello World!");
 
 
 app.MapPost("/login", ([FromBody] LoginDTO
-    loginDTO, IAdminServices adminServices) =>
+    loginDTO, IAdminInterface adminServices) =>
 {
     if (adminServices.Login(loginDTO) != null)
 
