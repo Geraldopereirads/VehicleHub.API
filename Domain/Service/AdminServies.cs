@@ -5,7 +5,7 @@ using VehicleHub.Api.Infrastructure.Db;
 namespace VehicleHub.Api.Domain.Service;
 
 
-public class AdminServies : IAdminServices
+public class AdminServies : IAdminInterface
 {
 
     private readonly DbContexto _contexto;
