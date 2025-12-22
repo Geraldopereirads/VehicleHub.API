@@ -4,7 +4,7 @@ namespace VehicleHub.Api.Domain.Interfaces;
 
 public interface IVehicleInterface
 {
-    List<Vehicle> ALl(int page = 1, string? name = null, string? mark = null);
+    List<Vehicle> ALl(int? page = 1, string? name = null, string? mark = null);
 
     Vehicle? SearchForId(int id);
 

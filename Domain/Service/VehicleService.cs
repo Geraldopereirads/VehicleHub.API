@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using VehicleHub.Api.Domain.Entity;
 using VehicleHub.Api.Domain.Interfaces;
@@ -15,7 +16,7 @@ public class VehicleService : IVehicleInterface
         _contexto = contexto;
     }
 
-    public List<Vehicle> ALl(int page = 1, string? name = null, string? mark = null)
+    public List<Vehicle> ALl(int? page = 1, string? name = null, string? mark = null)
     {
         var query = _contexto.Vehicles.AsQueryable();
         if (!string.IsNullOrEmpty(name))
@@ -25,7 +26,11 @@ public class VehicleService : IVehicleInterface
 
 
         int ItemsPerPage = 10;
-        query = query.Skip((page - 1) * ItemsPerPage).Take(ItemsPerPage);
+        if (page != null)
+        {
+            query = query.Skip(((int)page - 1) * ItemsPerPage).Take(ItemsPerPage);
+        }
+        
         return query.ToList();
     }
 
