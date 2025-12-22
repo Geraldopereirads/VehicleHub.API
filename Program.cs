@@ -36,20 +36,31 @@ app.MapGet("/", () => Results.Json(new Home()));
 
 #region Vehicles
 app.MapPost("/vehicles", ([FromBody] VehicleDTO
-    vehicleDTO, IVehicleInterface vehicleService) => {
+    vehicleDTO, IVehicleInterface vehicleService) =>
+{
 
-        var vehicle = new Vehicle
-        {
-            Name = vehicleDTO.Name,
-            Mark = vehicleDTO.Mark,
-            Year = vehicleDTO.Year
-        };
+    var vehicle = new Vehicle
+    {
+        Name = vehicleDTO.Name,
+        Mark = vehicleDTO.Mark,
+        Year = vehicleDTO.Year
+    };
 
-        vehicleService.Save(vehicle);
+    vehicleService.Save(vehicle);
 
-        return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
+    return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
 
 });
+
+app.MapGet("/vehicles", ([FromQuery] int? page, IVehicleInterface vehicleService) =>
+{
+
+    var vehicle = vehicleService.ALl(page);
+
+    return Results.Ok(vehicle);
+
+});
+
 #endregion
 
 
