@@ -13,6 +13,4 @@ public interface IVehicleInterface
     void Update(Vehicle vehicle);
 
     void Delete(Vehicle vehicle);
-
-
 }
