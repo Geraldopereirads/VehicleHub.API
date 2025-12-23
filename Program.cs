@@ -30,8 +30,20 @@ builder.Services.AddDbContext<DbContexto>(options =>
 var app = builder.Build();
 #endregion
 
+app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface adminServies) =>
+{
+    if (adminServies.Login(loginDTO) != null)
+    {
+        return Results.Ok("Login com sucesso");
+    }
+    else
+    {
+        return Results.Unauthorized();
+    }
+}).WithTags("Admins");
+
 #region Home
-app.MapGet("/", () => Results.Json(new Home()));
+app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
 #endregion
 
 #region Vehicles
@@ -48,18 +60,30 @@ app.MapPost("/vehicles", ([FromBody] VehicleDTO
 
     vehicleService.Save(vehicle);
 
-    return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
+    return Results.Created($"/vehicles/{vehicle.Id}", vehicle);
 
-});
+}).WithTags("vehicles");
 
-app.MapGet("/vehicles", ([FromQuery] int? page, IVehicleInterface vehicleService) =>
+app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleInterface vehicleService) =>
 {
 
     var vehicle = vehicleService.ALl(page);
 
     return Results.Ok(vehicle);
 
-});
+}).WithTags("vehicles");
+
+
+app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleService) =>
+{
+
+    var vehicle = vehicleService.SearchForId(id);
+
+    if (vehicle == null) return Results.NotFound();
+
+    return Results.Ok(vehicle);
+
+}).WithTags("vehicles");
 
 #endregion
 
