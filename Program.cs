@@ -85,6 +85,26 @@ app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleServic
 
 }).WithTags("vehicles");
 
+
+
+app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleInterface vehicleService) =>
+{
+
+    var vehicle = vehicleService.SearchForId(id);
+
+    if (vehicle == null) return Results.NotFound();
+
+    vehicle.Name = vehicleDTO.Name;
+    vehicle.Mark = vehicleDTO.Mark;
+    vehicle.Year = vehicleDTO.Year;
+
+    vehicleService.Update(vehicle);
+
+
+    return Results.Ok(vehicle);
+
+}).WithTags("vehicles");
+
 #endregion
 
 
