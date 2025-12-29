@@ -47,9 +47,41 @@ app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
 #endregion
 
 #region Vehicles
+ValidationErrors validationDTO(VehicleDTO vehicleDTO)
+{
+    var validation = new ValidationErrors
+    {
+        Messages = new List<string>()
+    };
+
+    if (string.IsNullOrEmpty(vehicleDTO.Name))
+
+        validation.Messages.Add("The name cannot be empty.");
+
+
+    if (string.IsNullOrEmpty(vehicleDTO.Mark))
+
+        validation.Messages.Add("The mark cannot be empty.");
+
+
+    if (vehicleDTO.Year < 1950)
+
+        validation.Messages.Add("Very old vehicles, only those manufactured from 1950 onwards, will be accepted.");
+
+    return validation;
+
+}
+
 app.MapPost("/vehicles", ([FromBody] VehicleDTO
     vehicleDTO, IVehicleInterface vehicleService) =>
 {
+
+    var validation = validationDTO(vehicleDTO);
+
+    if (validation.Messages.Count > 0)
+    {
+        return Results.BadRequest(validation);
+    }
 
     var vehicle = new Vehicle
     {
@@ -89,6 +121,13 @@ app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleServic
 
 app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleInterface vehicleService) =>
 {
+
+    var validation = validationDTO(vehicleDTO);
+
+    if (validation.Messages.Count > 0)
+    {
+        return Results.BadRequest(validation);
+    }
 
     var vehicle = vehicleService.SearchForId(id);
 
