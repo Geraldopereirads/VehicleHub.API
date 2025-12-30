@@ -1,4 +1,5 @@
-﻿using VehicleHub.Api.Domain.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using VehicleHub.Api.Domain.DTOs;
 using VehicleHub.Api.Domain.Entity;
 using VehicleHub.Api.Infrastructure.Db;
 
@@ -14,6 +15,20 @@ public class AdminServies : IAdminInterface
     {
         _contexto = contexto;
     }
+
+    public List<Admin> All(int? page)
+    {
+        var query = _contexto.Admins.AsQueryable();
+        
+        int ItemsPerPage = 10;
+        if (page != null)
+        {
+            query = query.Skip(((int)page - 1) * ItemsPerPage).Take(ItemsPerPage);
+        }
+
+        return query.ToList();
+    }
+
     public Admin? Login(LoginDTO loginDTO)
     {
 
@@ -22,6 +37,13 @@ public class AdminServies : IAdminInterface
         return adm;
 
 
-    }       
-    
+    }
+
+    public Admin Save(Admin admin)
+    {
+        _contexto.Admins.Add(admin);
+        _contexto.SaveChanges();
+
+        return admin;
+    }
 }
