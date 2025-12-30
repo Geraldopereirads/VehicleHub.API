@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VehicleHub.Api.Domain.DTOs;
 using VehicleHub.Api.Domain.Entity;
+using VehicleHub.Api.Domain.Enuns;
 using VehicleHub.Api.Domain.Interfaces;
 using VehicleHub.Api.Domain.ModelViews;
 using VehicleHub.Api.Domain.Service;
@@ -40,6 +41,40 @@ app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface admin
     {
         return Results.Unauthorized();
     }
+}).WithTags("Admins");
+
+
+app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServies) =>
+{
+    var validation = new ValidationErrors
+    {
+        Messages = new List<string>();
+    };
+
+    if (string.IsNullOrEmpty(adminDTO.Email))
+    {
+        validation.Messages.Add("Email addresses cannot be empty.");
+    }
+    if (string.IsNullOrEmpty(adminDTO.Senha))
+    {
+        validation.Messages.Add("The password cannot be empty.");
+    }
+    if (adminDTO.Perfil == null)
+    {
+        validation.Messages.Add("The Profile field cannot be empty.");
+    }
+
+    var admin = new Admin
+    {
+        Email = adminDTO.Email,
+        Senha = adminDTO.Senha,
+        Perfil = adminDTO.Perfil?.ToString() ?? Perfil.editor.ToString();
+    };
+
+    adminServies.Save(admin);
+
+    return Results.Created($"/admin/{admin.Id}", admin);
+  
 }).WithTags("Admins");
 
 #region Home
