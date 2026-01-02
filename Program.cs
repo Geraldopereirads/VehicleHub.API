@@ -44,37 +44,60 @@ app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface admin
 }).WithTags("Admins");
 
 
+app.MapGet("/admin", ([FromQuery] int? page, IAdminInterface adminServies) =>
+{
+    return Results.Ok(adminServies.All(page));
+
+}).WithTags("Admins");
+
+app.MapGet("/admins/{id}", ([FromRoute] int id, IAdminInterface adminServies) =>
+{
+
+    var admin = adminServies.SearchForId(id);
+
+    if (adminServies == null) return Results.NotFound();
+
+    return Results.Ok(admin);
+
+}).WithTags("Admins");
+
+
 app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServies) =>
 {
     var validation = new ValidationErrors
     {
-        Messages = new List<string>();
+        Messages = new List<string>()
     };
 
     if (string.IsNullOrEmpty(adminDTO.Email))
-    {
+
         validation.Messages.Add("Email addresses cannot be empty.");
-    }
+
     if (string.IsNullOrEmpty(adminDTO.Senha))
-    {
+
         validation.Messages.Add("The password cannot be empty.");
-    }
+
     if (adminDTO.Perfil == null)
-    {
+
         validation.Messages.Add("The Profile field cannot be empty.");
-    }
+
+
+    if (validation.Messages.Count > 0)
+
+        return Results.BadRequest(validation);
+
 
     var admin = new Admin
     {
         Email = adminDTO.Email,
         Senha = adminDTO.Senha,
-        Perfil = adminDTO.Perfil?.ToString() ?? Perfil.editor.ToString();
+        Perfil = adminDTO.Perfil.ToString() ?? Perfil.editor.ToString()
     };
 
     adminServies.Save(admin);
 
     return Results.Created($"/admin/{admin.Id}", admin);
-  
+
 }).WithTags("Admins");
 
 #region Home
@@ -122,7 +145,7 @@ app.MapPost("/vehicles", ([FromBody] VehicleDTO
     {
         Name = vehicleDTO.Name,
         Mark = vehicleDTO.Mark,
-        Year = vehicleDTO.Year
+        Year = vehicleDTO.Year,
     };
 
     vehicleService.Save(vehicle);
