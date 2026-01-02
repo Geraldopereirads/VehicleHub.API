@@ -46,4 +46,11 @@ public class AdminServies : IAdminInterface
 
         return admin;
     }
+
+    public Admin? SearchForId(int id)
+    {
+        return _contexto.Admins.Where(a => a.Id == id).FirstOrDefault();
+    }
+
+
 }
