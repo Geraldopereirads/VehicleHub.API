@@ -1,5 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using VehicleHub.Api.Domain.DTOs;
 using VehicleHub.Api.Domain.Entity;
 using VehicleHub.Api.Domain.Enuns;
@@ -12,7 +17,23 @@ using VehicleHub.Api.Infrastructure.Db;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var key = builder.Configuration.GetSection("Jwt").ToString();
+if (string.IsNullOrEmpty(key)) key = "123456";
 
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(option =>
+{
+    option.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateLifetime = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+    };
+});
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAdminInterface, AdminServies>();
 builder.Services.AddScoped<IVehicleInterface, VehicleService>();
@@ -24,31 +45,73 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DbContexto>(options =>
 {
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("sqlserver")
+        builder.Configuration.GetConnectionString("SqlServer")
     );
 });
 
 var app = builder.Build();
 #endregion
 
-app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface adminServies) =>
+string GenerateJwtToken(Admin admin)
 {
-    if (adminServies.Login(loginDTO) != null)
+    if (string.IsNullOrEmpty(key)) return string.Empty;
+
+    var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+    var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+    var claims = new List<Claim>()
     {
-        return Results.Ok("Login com sucesso");
+        new Claim(ClaimTypes.Email, admin.Email),
+        new Claim("Perfil", admin.Perfil),
+    };
+
+    var  token = new JwtSecurityToken(
+        claims: claims,
+        expires: DateTime.Now.AddDays(1),
+        signingCredentials: credentials
+        );
+
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+
+app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface adminServies) =>{
+
+    var adm = adminServies.Login(loginDTO);
+    if (adm != null)
+    {
+        string token = GenerateJwtToken(adm);
+        return Results.Ok(new AdminLogged
+        {
+            Email = adm.Email,
+            Perfil = adm.Perfil,
+            Token = token
+        });
     }
     else
-    {
         return Results.Unauthorized();
-    }
+   
 }).WithTags("Admins");
 
 
 app.MapGet("/admin", ([FromQuery] int? page, IAdminInterface adminServies) =>
 {
-    return Results.Ok(adminServies.All(page));
+    var adms = new List<AdminModelView>();
+    var admins = adminServies.All(page);
 
-}).WithTags("Admins");
+    foreach (var adm in admins)
+    {
+        adms.Add(new AdminModelView
+        {
+            id = adm.Id,
+            Email = adm.Email,
+            Perfil = adm.Perfil
+
+        });
+    }
+
+    return Results.Ok(adms);
+
+}).RequireAuthorization().WithTags("Admins");
 
 app.MapGet("/admins/{id}", ([FromRoute] int id, IAdminInterface adminServies) =>
 {
@@ -57,9 +120,15 @@ app.MapGet("/admins/{id}", ([FromRoute] int id, IAdminInterface adminServies) =>
 
     if (adminServies == null) return Results.NotFound();
 
-    return Results.Ok(admin);
+    return Results.Ok(new AdminModelView
+    {
+        id = admin.Id,
+        Email = admin.Email,
+        Perfil = admin.Perfil
 
-}).WithTags("Admins");
+    });
+
+}).RequireAuthorization().WithTags("Admins");
 
 
 app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServies) =>
@@ -91,14 +160,20 @@ app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServie
     {
         Email = adminDTO.Email,
         Senha = adminDTO.Senha,
-        Perfil = adminDTO.Perfil.ToString() ?? Perfil.editor.ToString()
+        Perfil = adminDTO.Perfil.ToString() ?? Perfil.Editor.ToString()
     };
 
     adminServies.Save(admin);
 
-    return Results.Created($"/admin/{admin.Id}", admin);
+    return Results.Created($"/admin/{admin.Id}", new AdminModelView
+    {
+        id = admin.Id,
+        Email = admin.Email,
+        Perfil = admin.Perfil
 
-}).WithTags("Admins");
+    });
+
+}).RequireAuthorization().WithTags("Admins");
 
 #region Home
 app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
@@ -152,7 +227,7 @@ app.MapPost("/vehicles", ([FromBody] VehicleDTO
 
     return Results.Created($"/vehicles/{vehicle.Id}", vehicle);
 
-}).WithTags("vehicles");
+}).RequireAuthorization().WithTags("vehicles");
 
 app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleInterface vehicleService) =>
 {
@@ -161,7 +236,7 @@ app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleInterface vehicleService)
 
     return Results.Ok(vehicle);
 
-}).WithTags("vehicles");
+}).RequireAuthorization().WithTags("vehicles");
 
 
 app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleService) =>
@@ -173,7 +248,7 @@ app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleServic
 
     return Results.Ok(vehicle);
 
-}).WithTags("vehicles");
+}).RequireAuthorization().WithTags("vehicles");
 
 
 
@@ -200,7 +275,7 @@ app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicle
 
     return Results.Ok(vehicle);
 
-}).WithTags("vehicles");
+}).RequireAuthorization().WithTags("vehicles");
 
 
 
@@ -216,7 +291,7 @@ app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleSer
 
     return Results.NoContent();
 
-}).WithTags("vehicles");
+}).RequireAuthorization().WithTags("vehicles");
 
 
 
@@ -228,6 +303,9 @@ app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleSer
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 app.Run();
