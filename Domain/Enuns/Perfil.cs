@@ -2,7 +2,7 @@
 
 public enum Perfil
 {
-    adm,
+    Adm,
 
-    editor
+    Editor
 }
