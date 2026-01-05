@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
 using VehicleHub.Api.Domain.Entity;
 using VehicleHub.Api.Domain.Interfaces;
 using VehicleHub.Api.Infrastructure.Db;
