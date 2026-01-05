@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -29,7 +31,10 @@ builder.Services.AddAuthentication(option =>
     option.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateLifetime = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+
     };
 });
 
@@ -61,11 +66,12 @@ string GenerateJwtToken(Admin admin)
 
     var claims = new List<Claim>()
     {
-        new Claim(ClaimTypes.Email, admin.Email),
+        new Claim("Email", admin.Email),
         new Claim("Perfil", admin.Perfil),
+        new Claim(ClaimTypes.Role, admin.Perfil.Trim().ToUpper()),
     };
 
-    var  token = new JwtSecurityToken(
+    var token = new JwtSecurityToken(
         claims: claims,
         expires: DateTime.Now.AddDays(1),
         signingCredentials: credentials
@@ -74,7 +80,8 @@ string GenerateJwtToken(Admin admin)
     return new JwtSecurityTokenHandler().WriteToken(token);
 }
 
-app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface adminServies) =>{
+app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface adminServies) =>
+{
 
     var adm = adminServies.Login(loginDTO);
     if (adm != null)
@@ -89,8 +96,8 @@ app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminInterface admin
     }
     else
         return Results.Unauthorized();
-   
-}).WithTags("Admins");
+
+}).AllowAnonymous().WithTags("Admins");
 
 
 app.MapGet("/admin", ([FromQuery] int? page, IAdminInterface adminServies) =>
@@ -111,14 +118,14 @@ app.MapGet("/admin", ([FromQuery] int? page, IAdminInterface adminServies) =>
 
     return Results.Ok(adms);
 
-}).RequireAuthorization().WithTags("Admins");
+}).WithTags("Admins");
 
 app.MapGet("/admins/{id}", ([FromRoute] int id, IAdminInterface adminServies) =>
 {
 
     var admin = adminServies.SearchForId(id);
 
-    if (adminServies == null) return Results.NotFound();
+    if (admin == null) return Results.NotFound();
 
     return Results.Ok(new AdminModelView
     {
@@ -128,7 +135,8 @@ app.MapGet("/admins/{id}", ([FromRoute] int id, IAdminInterface adminServies) =>
 
     });
 
-}).RequireAuthorization().WithTags("Admins");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM" }).WithTags("Admins");
 
 
 app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServies) =>
@@ -173,10 +181,11 @@ app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminInterface adminServie
 
     });
 
-}).RequireAuthorization().WithTags("Admins");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM" }).WithTags("Admins");
 
 #region Home
-app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
+app.MapGet("/", () => Results.Json(new Home())).AllowAnonymous().WithTags("Home");
 #endregion
 
 #region Vehicles
@@ -227,7 +236,8 @@ app.MapPost("/vehicles", ([FromBody] VehicleDTO
 
     return Results.Created($"/vehicles/{vehicle.Id}", vehicle);
 
-}).RequireAuthorization().WithTags("vehicles");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM, EDITOR" }).WithTags("vehicles");
 
 app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleInterface vehicleService) =>
 {
@@ -236,7 +246,8 @@ app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleInterface vehicleService)
 
     return Results.Ok(vehicle);
 
-}).RequireAuthorization().WithTags("vehicles");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM, EDITOR" }).WithTags("vehicles");
 
 
 app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleService) =>
@@ -248,7 +259,8 @@ app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleServic
 
     return Results.Ok(vehicle);
 
-}).RequireAuthorization().WithTags("vehicles");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM, EDITOR" }).WithTags("vehicles");
 
 
 
@@ -275,7 +287,8 @@ app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicle
 
     return Results.Ok(vehicle);
 
-}).RequireAuthorization().WithTags("vehicles");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM" }).WithTags("vehicles");
 
 
 
@@ -291,7 +304,8 @@ app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleInterface vehicleSer
 
     return Results.NoContent();
 
-}).RequireAuthorization().WithTags("vehicles");
+}).RequireAuthorization()
+.RequireAuthorization(new AuthorizeAttribute { Roles = "ADM" }).WithTags("vehicles");
 
 
 

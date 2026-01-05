@@ -1,6 +1,4 @@
-﻿using VehicleHub.Api.Domain.Enuns;
-
-namespace VehicleHub.Api.Domain.ModelViews;
+﻿namespace VehicleHub.Api.Domain.ModelViews;
 
 public record AdminModelView
 {
